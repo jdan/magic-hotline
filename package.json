@@ -1,0 +1,13 @@
+{
+  "dependencies": {
+    "dedent": "^0.7.0",
+    "dotenv": "^16.0.3",
+    "openai": "^3.2.1"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.22"
+  },
+  "scripts": {
+    "start": "nodemon index.js"
+  }
+}
