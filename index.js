@@ -77,31 +77,33 @@ const server = http.createServer(async (req, res) => {
       { responseType: "stream" }
     );
 
-    // chatgpt loves to output doctype> first (no <!)
-    let skip = true;
     completion.data.on("data", (buffer) => {
-      const data = buffer.toString();
+      /**
+       * Occasionally ChatGPT will send us multiple server-sent
+       * data: [...] lines in a single chunk.
+       */
+      const lines = buffer.toString().trim().split("\n\n");
 
-      if (data === "[DONE]") {
-        return res.end();
-      }
+      for (let i = 0; i < lines.length; i++) {
+        const data = lines[i];
 
-      try {
-        const json = JSON.parse(data.slice(6));
-        if (
-          json.choices &&
-          json.choices[0] &&
-          json.choices[0].delta &&
-          json.choices[0].delta.content
-        ) {
-          if (skip) {
-            skip = false;
-            return;
-          }
-          // TODO: buffer?
-          res.write(json.choices[0].delta.content);
+        if (data === "[DONE]") {
+          return res.end();
         }
-      } catch (e) {}
+
+        try {
+          const json = JSON.parse(data.slice(6).trim());
+          if (
+            json.choices &&
+            json.choices[0] &&
+            json.choices[0].delta &&
+            json.choices[0].delta.content
+          ) {
+            // TODO: buffer more?
+            res.write(json.choices[0].delta.content);
+          }
+        } catch (e) {}
+      }
     });
   }
 });
